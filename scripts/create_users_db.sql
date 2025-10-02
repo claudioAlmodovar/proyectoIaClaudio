@@ -19,14 +19,16 @@ CREATE TABLE dbo.Usuarios
     idUsuarios INT IDENTITY(1,1) PRIMARY KEY,
     usuario NVARCHAR(50) NOT NULL,
     nombre NVARCHAR(100) NOT NULL,
+    contrasena NVARCHAR(100) NOT NULL,
     activo BIT NOT NULL
 );
 GO
 
 SET IDENTITY_INSERT dbo.Usuarios ON;
-INSERT INTO dbo.Usuarios (idUsuarios, usuario, nombre, activo)
+INSERT INTO dbo.Usuarios (idUsuarios, usuario, nombre, contrasena, activo)
 VALUES
-    (1, N'user1', N'juan perez', 1),
-    (2, N'user2', N'luis lopez', 1);
+    (1, N'recepcion', N'Laura Sánchez', N'recepcion123', 1),
+    (2, N'doctor1', N'Dr. Jorge Medina', N'consulta2024', 1),
+    (3, N'admin', N'Administración', N'admin2024', 0);
 SET IDENTITY_INSERT dbo.Usuarios OFF;
 GO
