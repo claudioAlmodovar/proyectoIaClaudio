@@ -13,11 +13,14 @@ const credentials = reactive({
 
 const loading = ref(false);
 const errorMessage = ref('');
+const showErrorModal = ref(false);
 
 const apiBase = import.meta.env.VITE_API_BASE ?? 'http://localhost:5207';
+const invalidCredentialsMessage = 'usuario o contraseña no validos';
 
 const handleSubmit = async () => {
   errorMessage.value = '';
+  showErrorModal.value = false;
   loading.value = true;
 
   try {
@@ -30,9 +33,7 @@ const handleSubmit = async () => {
     });
 
     if (!response.ok) {
-      const payload = await response.json().catch(() => ({}));
-      const message = 'Credenciales inválidas o usuario inactivo.';
-      throw new Error(payload.message ?? message);
+      throw new Error(invalidCredentialsMessage);
     }
 
     const data = await response.json();
@@ -40,13 +41,18 @@ const handleSubmit = async () => {
     router.push({ name: 'dashboard' });
   } catch (error) {
     if (error instanceof Error) {
-      errorMessage.value = error.message;
+      errorMessage.value = error.message === invalidCredentialsMessage ? invalidCredentialsMessage : 'Ocurrió un error inesperado. Intenta de nuevo.';
     } else {
       errorMessage.value = 'Ocurrió un error inesperado. Intenta de nuevo.';
     }
+    showErrorModal.value = true;
   } finally {
     loading.value = false;
   }
+};
+
+const closeErrorModal = () => {
+  showErrorModal.value = false;
 };
 </script>
 
@@ -59,8 +65,7 @@ const handleSubmit = async () => {
             <p class="text-sm uppercase tracking-[0.3em] text-emerald-300">Consultorio Integral</p>
             <h1 class="mt-3 text-3xl font-bold text-white md:text-4xl">Acceso al panel clínico</h1>
             <p class="mt-4 text-sm leading-relaxed text-slate-300">
-              Administra citas, expedientes y seguimientos desde un único lugar. Ingresa con tu usuario asignado por la
-              administración del consultorio.
+              Administra citas, expedientes y seguimientos desde un único lugar. Ingresa con tu usuario asignado por la administración del consultorio.
             </p>
           </div>
           <ul class="space-y-3 text-sm text-slate-300">
@@ -120,18 +125,29 @@ const handleSubmit = async () => {
               <span v-if="!loading">Ingresar</span>
               <span v-else>Validando...</span>
             </button>
-
-            <p v-if="errorMessage" class="rounded-lg border border-rose-500/60 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
-              {{ errorMessage }}
-            </p>
           </form>
 
           <p class="text-xs text-slate-500">
-            ¿Necesitas ayuda? Contacta al área de soporte del consultorio para recuperar tu acceso o solicitar un nuevo
-            usuario.
+            ¿Necesitas ayuda? Contacta al área de soporte del consultorio para recuperar tu acceso o solicitar un nuevo usuario.
           </p>
         </section>
       </div>
     </div>
+
+    <transition name="fade">
+      <div v-if="showErrorModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 px-4">
+        <div class="w-full max-w-sm rounded-2xl border border-rose-500/40 bg-slate-900 p-6 text-center shadow-2xl shadow-rose-500/20">
+          <h3 class="text-lg font-semibold text-white">Inicio de sesión</h3>
+          <p class="mt-3 text-sm text-rose-200">{{ errorMessage || invalidCredentialsMessage }}</p>
+          <button
+            class="mt-6 inline-flex items-center justify-center rounded-xl bg-emerald-500 px-5 py-2 text-sm font-semibold uppercase tracking-wide text-slate-950 transition hover:bg-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/60"
+            type="button"
+            @click="closeErrorModal"
+          >
+            Aceptar
+          </button>
+        </div>
+      </div>
+    </transition>
   </main>
 </template>
