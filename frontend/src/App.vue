@@ -1,10 +1,11 @@
 <script setup lang="ts">
+import vueLogo from './assets/vue.svg'
 </script>
 
 <template>
   <main class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-950 to-black">
     <section class="mx-auto flex max-w-3xl flex-col items-center gap-6 px-4 py-16 text-center">
-      <img alt="Vue logo" class="h-24 w-24" src="/vite.svg" />
+      <img alt="Vue logo" class="h-24 w-24" :src="vueLogo" />
       <h1 class="text-4xl font-bold tracking-tight text-emerald-400 sm:text-5xl">
         Bienvenido a tu nueva aplicación Vue 3 + TypeScript
       </h1>
