@@ -1,4 +1,10 @@
-using Microsoft.AspNetCore.OpenApi;
+using Backend.Contracts;
+using Backend.Data;
+using Backend.Models;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -65,61 +71,3 @@ app.MapPost("/auth/login", async (ConsultorioDbContext db, LoginRequest request)
    .WithOpenApi();
 
 app.Run();
-
-class ConsultorioDbContext : DbContext
-{
-    public ConsultorioDbContext(DbContextOptions<ConsultorioDbContext> options)
-        : base(options)
-    {
-    }
-
-    public DbSet<Usuario> Usuarios => Set<Usuario>();
-
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
-    {
-        base.OnModelCreating(modelBuilder);
-
-        modelBuilder.Entity<Usuario>().HasData(
-            new Usuario
-            {
-                IdUsuarios = 1,
-                Usuario = "recepcion",
-                Nombre = "Laura Sánchez",
-                Contrasena = "recepcion123",
-                Activo = true
-            },
-            new Usuario
-            {
-                IdUsuarios = 2,
-                Usuario = "doctor1",
-                Nombre = "Dr. Jorge Medina",
-                Contrasena = "consulta2024",
-                Activo = true
-            },
-            new Usuario
-            {
-                IdUsuarios = 3,
-                Usuario = "admin",
-                Nombre = "Administración",
-                Contrasena = "admin2024",
-                Activo = false
-            });
-    }
-}
-
-class Usuario
-{
-    public int IdUsuarios { get; set; }
-
-    public string Usuario { get; set; } = string.Empty;
-
-    public string Nombre { get; set; } = string.Empty;
-
-    public string Contrasena { get; set; } = string.Empty;
-
-    public bool Activo { get; set; }
-}
-
-record LoginRequest(string Usuario, string Contrasena);
-
-record LoginResponse(int Id, string Usuario, string Nombre);
