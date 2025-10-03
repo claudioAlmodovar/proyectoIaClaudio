@@ -51,12 +51,12 @@ app.MapPost("/auth/login", (ConsultorioDbContext db, LoginRequest request) =>
 
     if (usuario is null || !string.Equals(usuario.Contrasena, request.Contrasena))
     {
-        return Results.Unauthorized();
+        return Results.Json(new { message = "Credenciales inválidas." }, statusCode: StatusCodes.Status401Unauthorized);
     }
 
     if (!usuario.Activo)
     {
-        return Results.Unauthorized(new { message = "El usuario se encuentra inactivo." });
+        return Results.Json(new { message = "El usuario se encuentra inactivo." }, statusCode: StatusCodes.Status401Unauthorized);
     }
 
     var response = new LoginResponse(usuario.IdUsuarios, usuario.NombreUsuario, usuario.Nombre);
