@@ -61,7 +61,8 @@ const menuSections: MenuSection[] = [
       },
       {
         title: 'Médicos',
-        detail: 'Actualiza información profesional, especialidades y disponibilidad.'
+        detail: 'Actualiza información profesional, especialidades y disponibilidad.',
+        routeName: 'medico-manage'
       }
     ]
   }

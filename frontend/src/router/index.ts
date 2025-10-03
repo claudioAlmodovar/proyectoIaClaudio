@@ -24,6 +24,14 @@ const router = createRouter({
       meta: {
         requiresAuth: true
       }
+    },
+    {
+      path: '/panel/medicos/nuevo',
+      name: 'medico-manage',
+      component: () => import('../views/MedicoManageView.vue'),
+      meta: {
+        requiresAuth: true
+      }
     }
   ]
 });

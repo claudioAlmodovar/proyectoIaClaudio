@@ -11,6 +11,17 @@ public sealed record CreateMedicoRequest(
     string? Email,
     bool Activo);
 
+public sealed record UpdateMedicoRequest(
+    string PrimerNombre,
+    string? SegundoNombre,
+    string ApellidoPaterno,
+    string? ApellidoMaterno,
+    string Cedula,
+    string? Telefono,
+    string? Especialidad,
+    string? Email,
+    bool Activo);
+
 public sealed record MedicoResponse(
     int Id,
     string PrimerNombre,
