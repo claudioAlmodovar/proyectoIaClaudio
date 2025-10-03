@@ -250,6 +250,67 @@ app.MapGet("/api/usuarios/{id:int}", async (int id, ConsultorioDbContext db) =>
     }
 }).WithName("GetUsuario").RequireAuthorization();
 
+app.MapPut("/api/usuarios/{id:int}", async (int id, UpdateUsuarioRequest request, ConsultorioDbContext db) =>
+{
+    try
+    {
+        var usuario = await db.Usuarios.FindAsync(id);
+        if (usuario is null)
+        {
+            return Results.NotFound();
+        }
+
+        var correoTrimmed = request.Correo?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(correoTrimmed))
+        {
+            return Results.BadRequest(new { message = "El correo electrónico es obligatorio." });
+        }
+
+        var correoNormalizado = correoTrimmed.ToLowerInvariant();
+        var correoExiste = await db.Usuarios.AnyAsync(u => u.Id != id && u.Correo.ToLower() == correoNormalizado);
+        if (correoExiste)
+        {
+            return Results.BadRequest(new { message = "El correo electrónico ya se encuentra registrado." });
+        }
+
+        if (request.MedicoId.HasValue)
+        {
+            var medicoExiste = await db.Medicos.AnyAsync(m => m.Id == request.MedicoId.Value);
+            if (!medicoExiste)
+            {
+                return Results.BadRequest(new { message = "El médico asociado no existe." });
+            }
+        }
+
+        var nombreTrimmed = request.NombreCompleto?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(nombreTrimmed))
+        {
+            return Results.BadRequest(new { message = "El nombre completo es obligatorio." });
+        }
+
+        usuario.Correo = correoTrimmed;
+        usuario.NombreCompleto = nombreTrimmed;
+        usuario.MedicoId = request.MedicoId;
+        usuario.Activo = request.Activo;
+
+        await db.SaveChangesAsync();
+
+        var response = new UsuarioResponse(
+            usuario.Id,
+            usuario.Correo,
+            usuario.NombreCompleto,
+            usuario.MedicoId,
+            usuario.Activo,
+            usuario.FechaCreacion);
+
+        return Results.Ok(response);
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem($"Ocurrió un error al actualizar el usuario. {ex.Message}", statusCode: StatusCodes.Status500InternalServerError);
+    }
+}).WithName("UpdateUsuario").RequireAuthorization();
+
 app.MapDelete("/api/usuarios/{id:int}", async (int id, ConsultorioDbContext db) =>
 {
     try
