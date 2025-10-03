@@ -18,6 +18,14 @@ const router = createRouter({
       }
     },
     {
+      path: '/panel/consultas/nueva',
+      name: 'consulta-create',
+      component: () => import('../views/ConsultaCreateView.vue'),
+      meta: {
+        requiresAuth: true
+      }
+    },
+    {
       path: '/panel/usuarios/nuevo',
       name: 'user-create',
       component: () => import('../views/UserCreateView.vue'),
