@@ -1,58 +1,60 @@
+using System.Threading;
+using System.Threading.Tasks;
 using Backend.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Data;
 
-public sealed class ConsultorioDbContext
+public sealed class ConsultorioDbContext : DbContext
 {
-    private readonly IReadOnlyDictionary<string, Usuario> _usuarios;
-
-    public ConsultorioDbContext()
+    public ConsultorioDbContext(DbContextOptions<ConsultorioDbContext> options)
+        : base(options)
     {
-        _usuarios = SeedUsuarios()
-            .ToDictionary(
-                usuario => usuario.NombreUsuario.Trim().ToLowerInvariant(),
-                usuario => usuario,
-                StringComparer.Ordinal);
     }
 
-    public Usuario? FindUsuario(string normalizedUsuario)
+    public DbSet<Usuario> Usuarios => Set<Usuario>();
+
+    public Task<Usuario?> FindUsuarioAsync(string normalizedUsuario, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(normalizedUsuario))
         {
-            return null;
+            return Task.FromResult<Usuario?>(null);
         }
 
-        _usuarios.TryGetValue(normalizedUsuario, out var usuario);
-        return usuario;
+        var normalized = normalizedUsuario.Trim().ToLowerInvariant();
+
+        return Usuarios
+            .AsNoTracking()
+            .FirstOrDefaultAsync(usuario => usuario.NombreUsuario.ToLower() == normalized, cancellationToken);
     }
 
-    private static IEnumerable<Usuario> SeedUsuarios()
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        yield return new Usuario
-        {
-            IdUsuarios = 1,
-            NombreUsuario = "recepcion",
-            Nombre = "Laura Sánchez",
-            Contrasena = "recepcion123",
-            Activo = true
-        };
+        base.OnModelCreating(modelBuilder);
 
-        yield return new Usuario
+        modelBuilder.Entity<Usuario>(entity =>
         {
-            IdUsuarios = 2,
-            NombreUsuario = "doctor1",
-            Nombre = "Dr. Jorge Medina",
-            Contrasena = "consulta2024",
-            Activo = true
-        };
+            entity.ToTable("usuarios");
 
-        yield return new Usuario
-        {
-            IdUsuarios = 3,
-            NombreUsuario = "admin",
-            Nombre = "Administración",
-            Contrasena = "admin2024",
-            Activo = false
-        };
+            entity.HasKey(usuario => usuario.IdUsuarios);
+
+            entity.Property(usuario => usuario.IdUsuarios)
+                  .HasColumnName("idUsuarios");
+
+            entity.Property(usuario => usuario.NombreUsuario)
+                  .HasColumnName("nombreUsuario")
+                  .HasMaxLength(100);
+
+            entity.Property(usuario => usuario.Nombre)
+                  .HasColumnName("nombre")
+                  .HasMaxLength(150);
+
+            entity.Property(usuario => usuario.Contrasena)
+                  .HasColumnName("contrasena")
+                  .HasMaxLength(255);
+
+            entity.Property(usuario => usuario.Activo)
+                  .HasColumnName("activo");
+        });
     }
 }

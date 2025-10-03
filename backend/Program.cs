@@ -1,8 +1,10 @@
+using System.Threading;
 using Backend.Contracts;
 using Backend.Data;
 using Backend.Models;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
@@ -19,7 +21,11 @@ builder.Services.AddCors(options =>
               .AllowAnyHeader());
 });
 
-builder.Services.AddSingleton<ConsultorioDbContext>();
+var connectionString = builder.Configuration.GetConnectionString("Consultorio")
+    ?? throw new InvalidOperationException("Connection string 'Consultorio' not found.");
+
+builder.Services.AddDbContext<ConsultorioDbContext>(options =>
+    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
 
 var app = builder.Build();
 
@@ -38,7 +44,7 @@ app.MapGet("/", () => Results.Json(new
 }))
    .WithName("GetRoot");
 
-app.MapPost("/auth/login", (ConsultorioDbContext db, LoginRequest request) =>
+app.MapPost("/auth/login", async (ConsultorioDbContext db, LoginRequest request, CancellationToken cancellationToken) =>
 {
     if (string.IsNullOrWhiteSpace(request.Usuario) || string.IsNullOrWhiteSpace(request.Contrasena))
     {
@@ -47,7 +53,7 @@ app.MapPost("/auth/login", (ConsultorioDbContext db, LoginRequest request) =>
 
     var normalizedUser = request.Usuario.Trim().ToLowerInvariant();
 
-    var usuario = db.FindUsuario(normalizedUser);
+    var usuario = await db.FindUsuarioAsync(normalizedUser, cancellationToken);
 
     if (usuario is null || !string.Equals(usuario.Contrasena, request.Contrasena))
     {
