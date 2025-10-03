@@ -42,6 +42,14 @@ const usersLoading = ref(false);
 const usersError = ref('');
 const users = ref<UsuarioResponse[]>([]);
 const deletingUserIds = ref<number[]>([]);
+const confirmDeleteUserId = ref<number | null>(null);
+const confirmDeleteUserLoading = ref(false);
+
+const userPendingDeletion = computed(() =>
+  confirmDeleteUserId.value === null
+    ? null
+    : users.value.find((usuario) => usuario.id === confirmDeleteUserId.value) ?? null
+);
 
 const canSubmit = computed(() => {
   return (
@@ -210,12 +218,7 @@ const removeDeletingUserId = (id: number) => {
   deletingUserIds.value = deletingUserIds.value.filter((currentId) => currentId !== id);
 };
 
-const deleteUser = async (id: number) => {
-  const confirmed = window.confirm('¿Deseas eliminar este usuario? Esta acción no se puede deshacer.');
-  if (!confirmed) {
-    return;
-  }
-
+const performDeleteUser = async (id: number) => {
   deletingUserIds.value = [...deletingUserIds.value, id];
   usersError.value = '';
 
@@ -245,21 +248,51 @@ const deleteUser = async (id: number) => {
 };
 
 const isDeletingUser = (id: number) => deletingUserIds.value.includes(id);
+
+const promptDeleteUser = (id: number) => {
+  if (isDeletingUser(id)) {
+    return;
+  }
+
+  usersError.value = '';
+  confirmDeleteUserId.value = id;
+};
+
+const closeDeleteModal = () => {
+  if (confirmDeleteUserLoading.value) {
+    return;
+  }
+
+  confirmDeleteUserId.value = null;
+};
+
+const confirmDeleteUser = async () => {
+  const id = confirmDeleteUserId.value;
+  if (id === null) {
+    return;
+  }
+
+  confirmDeleteUserLoading.value = true;
+
+  try {
+    await performDeleteUser(id);
+    confirmDeleteUserId.value = null;
+  } finally {
+    confirmDeleteUserLoading.value = false;
+  }
+};
 </script>
 
 <template>
   <main class="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950 px-4 py-10">
     <div class="mx-auto flex max-w-4xl flex-col gap-8">
       <header class="flex flex-col gap-6 rounded-3xl border border-emerald-500/20 bg-slate-950/80 p-8 shadow-2xl shadow-emerald-500/10 backdrop-blur">
-        <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div class="flex flex-col gap-4">
           <div>
             <p class="text-sm uppercase tracking-[0.3em] text-emerald-300">Administración</p>
             <h1 class="text-3xl font-bold text-white md:text-4xl">Usuarios</h1>
-            <p class="mt-3 max-w-2xl text-sm text-slate-300">
-              Completa el formulario para registrar nuevos usuarios en el sistema. Los datos se guardarán automáticamente en la base de datos.
-            </p>
           </div>
-          <div class="flex flex-col items-start gap-3 text-sm text-emerald-100 md:items-end">
+          <div class="flex items-center gap-4 text-sm text-emerald-100">
             <button
               class="inline-flex items-center justify-center rounded-xl border border-emerald-400/60 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-emerald-200 transition hover:bg-emerald-500/10"
               type="button"
@@ -268,7 +301,7 @@ const isDeletingUser = (id: number) => deletingUserIds.value.includes(id);
               Volver al panel
             </button>
             <button
-              class="inline-flex items-center justify-center rounded-xl border border-emerald-400/60 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-emerald-200 transition hover:bg-emerald-500/10"
+              class="ml-auto inline-flex items-center justify-center rounded-xl border border-emerald-400/60 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-emerald-200 transition hover:bg-emerald-500/10"
               type="button"
               @click="openUsersModal"
             >
@@ -427,9 +460,9 @@ const isDeletingUser = (id: number) => deletingUserIds.value.includes(id);
                     <td class="px-4 py-3 text-right">
                       <button
                         class="inline-flex items-center justify-center rounded-lg border border-rose-400/60 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-rose-200 transition hover:bg-rose-500/10 disabled:cursor-not-allowed disabled:opacity-60"
-                        :disabled="isDeletingUser(usuario.id)"
+                        :disabled="isDeletingUser(usuario.id) || confirmDeleteUserLoading"
                         type="button"
-                        @click="deleteUser(usuario.id)"
+                        @click="promptDeleteUser(usuario.id)"
                       >
                         <span v-if="!isDeletingUser(usuario.id)">Eliminar</span>
                         <span v-else>Eliminando...</span>
@@ -440,6 +473,43 @@ const isDeletingUser = (id: number) => deletingUserIds.value.includes(id);
               </table>
             </div>
           </section>
+        </div>
+      </div>
+    </transition>
+    <transition name="fade">
+      <div
+        v-if="confirmDeleteUserId !== null"
+        class="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/80 px-4 backdrop-blur"
+      >
+        <div class="w-full max-w-md rounded-3xl border border-emerald-500/30 bg-slate-950 p-8 text-center shadow-2xl shadow-emerald-500/20">
+          <h3 class="text-2xl font-semibold text-white">Eliminar usuario</h3>
+          <p class="mt-4 text-sm text-slate-300">¿Deseas eliminar este usuario? Esta acción no se puede deshacer.</p>
+          <div
+            v-if="userPendingDeletion"
+            class="mt-5 rounded-2xl border border-slate-800 bg-slate-900/70 px-5 py-4 text-left text-sm text-slate-200"
+          >
+            <p class="font-semibold text-white">{{ userPendingDeletion.nombreCompleto }}</p>
+            <p class="text-xs text-slate-400">{{ userPendingDeletion.correo }}</p>
+          </div>
+          <div class="mt-6 flex items-center gap-3">
+            <button
+              class="inline-flex flex-1 items-center justify-center rounded-xl border border-emerald-400/60 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-emerald-200 transition hover:bg-emerald-500/10 disabled:cursor-not-allowed disabled:opacity-60"
+              :disabled="confirmDeleteUserLoading"
+              type="button"
+              @click="closeDeleteModal"
+            >
+              Cancelar
+            </button>
+            <button
+              class="inline-flex flex-1 items-center justify-center rounded-xl border border-rose-400/60 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-rose-200 transition hover:bg-rose-500/10 disabled:cursor-not-allowed disabled:opacity-60"
+              :disabled="confirmDeleteUserLoading"
+              type="button"
+              @click="confirmDeleteUser"
+            >
+              <span v-if="!confirmDeleteUserLoading">Eliminar</span>
+              <span v-else>Eliminando...</span>
+            </button>
+          </div>
         </div>
       </div>
     </transition>
