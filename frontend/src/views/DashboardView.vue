@@ -6,8 +6,8 @@ import { useAuthStore } from '@/stores/auth';
 const authStore = useAuthStore();
 const router = useRouter();
 
-const nombre = computed(() => authStore.user?.nombre ?? '');
-const usuario = computed(() => authStore.user?.usuario ?? '');
+const nombre = computed(() => authStore.user?.nombreCompleto ?? '');
+const correo = computed(() => authStore.user?.correo ?? '');
 
 const logout = () => {
   authStore.logout();
@@ -63,7 +63,7 @@ const menuSections = [
           <div class="flex flex-col items-start gap-3 text-sm text-emerald-100 md:items-end">
             <div class="rounded-2xl border border-emerald-400/30 bg-emerald-400/10 px-5 py-3">
               Sesión iniciada como <span class="font-semibold text-white">{{ nombre }}</span>
-              <span class="ml-1 text-emerald-300">({{ usuario }})</span>
+              <span class="ml-1 text-emerald-300">({{ correo }})</span>
             </div>
             <button
               class="inline-flex items-center justify-center rounded-xl border border-emerald-400/60 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-emerald-200 transition hover:bg-emerald-500/10"
