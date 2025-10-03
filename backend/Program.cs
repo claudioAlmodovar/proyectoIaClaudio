@@ -25,7 +25,7 @@ var connectionString = builder.Configuration.GetConnectionString("Consultorio")
     ?? throw new InvalidOperationException("Connection string 'Consultorio' not found.");
 
 builder.Services.AddDbContext<ConsultorioDbContext>(options =>
-    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
+    options.UseSqlServer(connectionString));
 
 var app = builder.Build();
 
