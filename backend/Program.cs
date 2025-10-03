@@ -37,36 +37,61 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors();
 
-app.MapGet("/", () => Results.Json(new
+app.MapGet("/", () =>
 {
-    nombre = "API Consultorio",
-    version = "1.0.0"
-}))
+    try
+    {
+        return Results.Json(new
+        {
+            nombre = "API Consultorio",
+            version = "1.0.0"
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.Json(new
+        {
+            message = "Ocurrió un error al obtener la información de la API.",
+            detail = ex.Message
+        }, statusCode: StatusCodes.Status500InternalServerError);
+    }
+})
    .WithName("GetRoot");
 
 app.MapPost("/auth/login", async (ConsultorioDbContext db, LoginRequest request, CancellationToken cancellationToken) =>
 {
-    if (string.IsNullOrWhiteSpace(request.Usuario) || string.IsNullOrWhiteSpace(request.Contrasena))
+    try
     {
-        return Results.BadRequest(new { message = "Usuario y contraseña son obligatorios." });
+        if (string.IsNullOrWhiteSpace(request.Usuario) || string.IsNullOrWhiteSpace(request.Contrasena))
+        {
+            return Results.BadRequest(new { message = "Usuario y contraseña son obligatorios." });
+        }
+
+        var normalizedUser = request.Usuario.Trim().ToLowerInvariant();
+
+        var usuario = await db.FindUsuarioAsync(normalizedUser, cancellationToken);
+
+        if (usuario is null || !string.Equals(usuario.Contrasena, request.Contrasena))
+        {
+            return Results.Json(new { message = "Credenciales inválidas." }, statusCode: StatusCodes.Status401Unauthorized);
+        }
+
+        if (!usuario.Activo)
+        {
+            return Results.Json(new { message = "El usuario se encuentra inactivo." }, statusCode: StatusCodes.Status401Unauthorized);
+        }
+
+        var response = new LoginResponse(usuario.IdUsuarios, usuario.NombreUsuario, usuario.Nombre);
+        return Results.Ok(response);
     }
-
-    var normalizedUser = request.Usuario.Trim().ToLowerInvariant();
-
-    var usuario = await db.FindUsuarioAsync(normalizedUser, cancellationToken);
-
-    if (usuario is null || !string.Equals(usuario.Contrasena, request.Contrasena))
+    catch (Exception ex)
     {
-        return Results.Json(new { message = "Credenciales inválidas." }, statusCode: StatusCodes.Status401Unauthorized);
+        return Results.Json(new
+        {
+            message = "Ocurrió un error al iniciar sesión.",
+            detail = ex.Message
+        }, statusCode: StatusCodes.Status500InternalServerError);
     }
-
-    if (!usuario.Activo)
-    {
-        return Results.Json(new { message = "El usuario se encuentra inactivo." }, statusCode: StatusCodes.Status401Unauthorized);
-    }
-
-    var response = new LoginResponse(usuario.IdUsuarios, usuario.NombreUsuario, usuario.Nombre);
-    return Results.Ok(response);
 })
    .WithName("Login")
    .WithOpenApi();
