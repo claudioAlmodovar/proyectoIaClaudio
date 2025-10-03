@@ -6,9 +6,20 @@ import { useAuthStore } from '@/stores/auth';
 const router = useRouter();
 const authStore = useAuthStore();
 
+type LoginResponse = {
+  token: string;
+  expiracion: string;
+  usuario: {
+    id: number;
+    correo: string;
+    nombreCompleto: string;
+    medicoId: number | null;
+  };
+};
+
 const credentials = reactive({
-  usuario: '',
-  contrasena: ''
+  correo: '',
+  password: ''
 });
 
 const loading = ref(false);
@@ -16,7 +27,7 @@ const errorMessage = ref('');
 const showErrorModal = ref(false);
 
 const apiBase = import.meta.env.VITE_API_BASE ?? 'https://localhost:59831';
-const invalidCredentialsMessage = 'usuario o contraseña no válidos';
+const invalidCredentialsMessage = 'Correo o contraseña no válidos';
 
 const handleSubmit = async () => {
   errorMessage.value = '';
@@ -50,8 +61,8 @@ const handleSubmit = async () => {
       throw new Error(apiErrorMessage);
     }
 
-    const data = await response.json();
-    authStore.setUser(data);
+    const data = (await response.json()) as LoginResponse;
+    authStore.setSession(data);
     router.push({ name: 'dashboard' });
   } catch (error) {
     if (error instanceof Error && error.message.trim().length > 0) {
@@ -106,13 +117,13 @@ const closeErrorModal = () => {
 
           <form class="space-y-5" @submit.prevent="handleSubmit">
             <div class="space-y-2">
-              <label class="block text-sm font-medium text-slate-300" for="usuario">Usuario</label>
+              <label class="block text-sm font-medium text-slate-300" for="correo">Correo electrónico</label>
               <input
-                id="usuario"
-                v-model.trim="credentials.usuario"
+                id="correo"
+                v-model.trim="credentials.correo"
                 autocomplete="username"
                 class="w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-slate-100 shadow-inner focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
-                placeholder="Ej. recepcion"
+                placeholder="correo@ejemplo.com"
                 required
                 type="text"
               />
@@ -122,7 +133,7 @@ const closeErrorModal = () => {
               <label class="block text-sm font-medium text-slate-300" for="contrasena">Contraseña</label>
               <input
                 id="contrasena"
-                v-model.trim="credentials.contrasena"
+                v-model.trim="credentials.password"
                 autocomplete="current-password"
                 class="w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-slate-100 shadow-inner focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
                 placeholder="Introduce tu contraseña"
