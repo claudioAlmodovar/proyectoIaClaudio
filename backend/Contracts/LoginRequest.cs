@@ -1,3 +1,3 @@
 namespace Backend.Contracts;
 
-public sealed record LoginRequest(string Usuario, string Contrasena);
+public sealed record LoginRequest(string Correo, string Password);
