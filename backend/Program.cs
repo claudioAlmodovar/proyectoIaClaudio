@@ -5,8 +5,6 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,8 +19,7 @@ builder.Services.AddCors(options =>
               .AllowAnyHeader());
 });
 
-builder.Services.AddDbContext<ConsultorioDbContext>(options =>
-    options.UseInMemoryDatabase("ConsultorioDb"));
+builder.Services.AddSingleton<ConsultorioDbContext>();
 
 var app = builder.Build();
 
@@ -41,7 +38,7 @@ app.MapGet("/", () => Results.Json(new
 }))
    .WithName("GetRoot");
 
-app.MapPost("/auth/login", async (ConsultorioDbContext db, LoginRequest request) =>
+app.MapPost("/auth/login", (ConsultorioDbContext db, LoginRequest request) =>
 {
     if (string.IsNullOrWhiteSpace(request.Usuario) || string.IsNullOrWhiteSpace(request.Contrasena))
     {
@@ -50,13 +47,10 @@ app.MapPost("/auth/login", async (ConsultorioDbContext db, LoginRequest request)
 
     var normalizedUser = request.Usuario.Trim().ToLowerInvariant();
 
-    var usuario = await db.Usuarios
-        .AsNoTracking()
-        .FirstOrDefaultAsync(u => u.Usuario.ToLower() == normalizedUser);
+    var usuario = db.FindUsuario(normalizedUser);
 
     if (usuario is null || !string.Equals(usuario.Contrasena, request.Contrasena))
     {
-        await Task.Delay(Random.Shared.Next(100, 300));
         return Results.Unauthorized();
     }
 
@@ -65,7 +59,7 @@ app.MapPost("/auth/login", async (ConsultorioDbContext db, LoginRequest request)
         return Results.Unauthorized(new { message = "El usuario se encuentra inactivo." });
     }
 
-    var response = new LoginResponse(usuario.IdUsuarios, usuario.Usuario, usuario.Nombre);
+    var response = new LoginResponse(usuario.IdUsuarios, usuario.NombreUsuario, usuario.Nombre);
     return Results.Ok(response);
 })
    .WithName("Login")
