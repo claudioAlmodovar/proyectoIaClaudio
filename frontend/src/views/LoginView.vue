@@ -15,7 +15,7 @@ const loading = ref(false);
 const errorMessage = ref('');
 const showErrorModal = ref(false);
 
-const apiBase = import.meta.env.VITE_API_BASE ?? 'http://localhost:5207';
+const apiBase = import.meta.env.VITE_API_BASE ?? 'https://localhost:59831';
 const invalidCredentialsMessage = 'usuario o contraseña no validos';
 
 const handleSubmit = async () => {
