@@ -20,6 +20,13 @@ type UsuarioResponse = {
   fechaCreacion: string;
 };
 
+type UpdateUserPayload = {
+  correo: string;
+  nombreCompleto: string;
+  medicoId: number | null;
+  activo: boolean;
+};
+
 const router = useRouter();
 const authStore = useAuthStore();
 
@@ -44,12 +51,30 @@ const users = ref<UsuarioResponse[]>([]);
 const deletingUserIds = ref<number[]>([]);
 const confirmDeleteUserId = ref<number | null>(null);
 const confirmDeleteUserLoading = ref(false);
+const editingUserId = ref<number | null>(null);
+const editLoading = ref(false);
+const editErrorMessage = ref('');
+
+const editForm = reactive({
+  nombreCompleto: '',
+  correo: '',
+  medicoId: '',
+  activo: true
+});
 
 const userPendingDeletion = computed(() =>
   confirmDeleteUserId.value === null
     ? null
     : users.value.find((usuario) => usuario.id === confirmDeleteUserId.value) ?? null
 );
+
+const editingUser = computed(() =>
+  editingUserId.value === null
+    ? null
+    : users.value.find((usuario) => usuario.id === editingUserId.value) ?? null
+);
+
+const isEditModalOpen = computed(() => editingUserId.value !== null);
 
 const canSubmit = computed(() => {
   return (
@@ -69,8 +94,8 @@ const resetForm = () => {
   form.activo = true;
 };
 
-const parseMedicoId = (): number | null => {
-  const trimmed = form.medicoId.trim();
+const parseMedicoIdValue = (value: string): number | null => {
+  const trimmed = value.trim();
   if (!trimmed) {
     return null;
   }
@@ -83,6 +108,10 @@ const parseMedicoId = (): number | null => {
   return parsed;
 };
 
+const parseMedicoId = (): number | null => {
+  return parseMedicoIdValue(form.medicoId);
+};
+
 const buildPayload = (): CreateUserPayload => ({
   correo: form.correo.trim(),
   password: form.password,
@@ -90,6 +119,32 @@ const buildPayload = (): CreateUserPayload => ({
   medicoId: parseMedicoId(),
   activo: form.activo
 });
+
+const buildUpdatePayload = (): UpdateUserPayload => {
+  const correo = editForm.correo.trim();
+  if (correo.length === 0) {
+    throw new Error('El correo electrónico es obligatorio.');
+  }
+
+  const nombreCompleto = editForm.nombreCompleto.trim();
+  if (nombreCompleto.length === 0) {
+    throw new Error('El nombre completo es obligatorio.');
+  }
+
+  return {
+    correo,
+    nombreCompleto,
+    medicoId: parseMedicoIdValue(editForm.medicoId),
+    activo: editForm.activo
+  };
+};
+
+const resetEditForm = () => {
+  editForm.nombreCompleto = '';
+  editForm.correo = '';
+  editForm.medicoId = '';
+  editForm.activo = true;
+};
 
 const handleSubmit = async () => {
   errorMessage.value = '';
@@ -163,7 +218,7 @@ const goBack = () => {
   router.push({ name: 'dashboard' });
 };
 
-const buildAuthHeaders = (): HeadersInit => {
+const buildAuthHeaders = (): Record<string, string> => {
   const headers: Record<string, string> = {};
 
   if (authStore.token) {
@@ -207,11 +262,6 @@ const fetchUsers = async () => {
 const openUsersModal = () => {
   showUsersModal.value = true;
   void fetchUsers();
-};
-
-const closeUsersModal = () => {
-  showUsersModal.value = false;
-  usersError.value = '';
 };
 
 const removeDeletingUserId = (id: number) => {
@@ -279,6 +329,103 @@ const confirmDeleteUser = async () => {
     confirmDeleteUserId.value = null;
   } finally {
     confirmDeleteUserLoading.value = false;
+  }
+};
+
+const openEditModal = (usuario: UsuarioResponse) => {
+  editingUserId.value = usuario.id;
+  editForm.nombreCompleto = usuario.nombreCompleto;
+  editForm.correo = usuario.correo;
+  editForm.medicoId = usuario.medicoId !== null ? String(usuario.medicoId) : '';
+  editForm.activo = usuario.activo;
+  editErrorMessage.value = '';
+};
+
+const closeEditModal = () => {
+  if (editLoading.value) {
+    return;
+  }
+
+  editingUserId.value = null;
+  editErrorMessage.value = '';
+  resetEditForm();
+};
+
+const closeUsersModal = () => {
+  showUsersModal.value = false;
+  usersError.value = '';
+  closeEditModal();
+};
+
+const handleUpdateUser = async () => {
+  const id = editingUserId.value;
+  if (id === null) {
+    return;
+  }
+
+  editErrorMessage.value = '';
+  successMessage.value = '';
+
+  if (!authStore.token) {
+    editErrorMessage.value = 'Debes iniciar sesión para actualizar usuarios.';
+    return;
+  }
+
+  let payload: UpdateUserPayload;
+
+  try {
+    payload = buildUpdatePayload();
+  } catch (error) {
+    if (error instanceof Error && error.message.trim().length > 0) {
+      editErrorMessage.value = error.message;
+    } else {
+      editErrorMessage.value = 'Revisa los datos ingresados.';
+    }
+    return;
+  }
+
+  editLoading.value = true;
+
+  try {
+    const headers = {
+      'Content-Type': 'application/json',
+      ...buildAuthHeaders()
+    };
+
+    const response = await fetch(`${apiBase}/api/usuarios/${id}`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      let apiMessage = 'No se pudo actualizar el usuario. Intenta nuevamente.';
+      try {
+        const errorBody = (await response.json()) as Partial<{ message: string; detail: string }>;
+        const possibleMessages = [errorBody?.message, errorBody?.detail].filter(
+          (value): value is string => typeof value === 'string' && value.trim().length > 0
+        );
+        if (possibleMessages.length > 0) {
+          apiMessage = possibleMessages.join(' ');
+        }
+      } catch (parseError) {
+        // Mantenemos el mensaje por defecto si no es posible parsear la respuesta.
+      }
+
+      throw new Error(apiMessage);
+    }
+
+    successMessage.value = 'Usuario actualizado correctamente.';
+    await fetchUsers();
+    closeEditModal();
+  } catch (error) {
+    if (error instanceof Error && error.message.trim().length > 0) {
+      editErrorMessage.value = error.message;
+    } else {
+      editErrorMessage.value = 'Ocurrió un error inesperado. Intenta nuevamente.';
+    }
+  } finally {
+    editLoading.value = false;
   }
 };
 </script>
@@ -457,22 +604,120 @@ const confirmDeleteUser = async () => {
                         {{ usuario.activo ? 'Activo' : 'Inactivo' }}
                       </span>
                     </td>
-                    <td class="px-4 py-3 text-right">
-                      <button
-                        class="inline-flex items-center justify-center rounded-lg border border-rose-400/60 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-rose-200 transition hover:bg-rose-500/10 disabled:cursor-not-allowed disabled:opacity-60"
-                        :disabled="isDeletingUser(usuario.id) || confirmDeleteUserLoading"
-                        type="button"
-                        @click="promptDeleteUser(usuario.id)"
-                      >
-                        <span v-if="!isDeletingUser(usuario.id)">Eliminar</span>
-                        <span v-else>Eliminando...</span>
-                      </button>
+                    <td class="px-4 py-3">
+                      <div class="flex items-center justify-end gap-2">
+                        <button
+                          class="inline-flex items-center justify-center rounded-lg border border-emerald-400/60 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-emerald-200 transition hover:bg-emerald-500/10 disabled:cursor-not-allowed disabled:opacity-60"
+                          :disabled="isDeletingUser(usuario.id) || confirmDeleteUserLoading"
+                          type="button"
+                          @click="openEditModal(usuario)"
+                        >
+                          Editar
+                        </button>
+                        <button
+                          class="inline-flex items-center justify-center rounded-lg border border-rose-400/60 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-rose-200 transition hover:bg-rose-500/10 disabled:cursor-not-allowed disabled:opacity-60"
+                          :disabled="isDeletingUser(usuario.id) || confirmDeleteUserLoading"
+                          type="button"
+                          @click="promptDeleteUser(usuario.id)"
+                        >
+                          <span v-if="!isDeletingUser(usuario.id)">Eliminar</span>
+                          <span v-else>Eliminando...</span>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 </tbody>
               </table>
             </div>
           </section>
+        </div>
+      </div>
+    </transition>
+    <transition name="fade">
+      <div
+        v-if="isEditModalOpen"
+        class="fixed inset-0 z-[55] flex items-center justify-center bg-slate-950/80 px-4 backdrop-blur"
+      >
+        <div class="w-full max-w-2xl rounded-3xl border border-emerald-500/30 bg-slate-950 p-8 shadow-2xl shadow-emerald-500/20">
+          <header class="mb-6">
+            <p class="text-xs uppercase tracking-[0.3em] text-emerald-300">Usuarios</p>
+            <h3 class="text-2xl font-semibold text-white">Editar usuario</h3>
+            <div v-if="editingUser" class="mt-2 text-sm text-slate-300">
+              <p class="font-semibold text-white">{{ editingUser.nombreCompleto }}</p>
+              <p class="text-xs text-slate-400">{{ editingUser.correo }}</p>
+            </div>
+          </header>
+
+          <div v-if="editErrorMessage" class="mb-4 rounded-2xl border border-rose-500/40 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+            {{ editErrorMessage }}
+          </div>
+
+          <form class="grid gap-6 md:grid-cols-2" @submit.prevent="handleUpdateUser">
+            <div class="space-y-2 md:col-span-2">
+              <label class="block text-sm font-medium text-slate-300" for="editNombreCompleto">Nombre completo</label>
+              <input
+                id="editNombreCompleto"
+                v-model.trim="editForm.nombreCompleto"
+                class="w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-slate-100 shadow-inner focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+                placeholder="Nombre y apellidos"
+                required
+                type="text"
+              />
+            </div>
+
+            <div class="space-y-2 md:col-span-2">
+              <label class="block text-sm font-medium text-slate-300" for="editCorreo">Correo electrónico</label>
+              <input
+                id="editCorreo"
+                v-model.trim="editForm.correo"
+                class="w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-slate-100 shadow-inner focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+                placeholder="correo@ejemplo.com"
+                required
+                type="email"
+              />
+            </div>
+
+            <div class="space-y-2">
+              <label class="block text-sm font-medium text-slate-300" for="editMedicoId">Médico asociado (opcional)</label>
+              <input
+                id="editMedicoId"
+                v-model.trim="editForm.medicoId"
+                class="w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-slate-100 shadow-inner focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+                placeholder="ID numérico del médico"
+                type="text"
+              />
+              <p class="text-xs text-slate-400">Introduce el identificador numérico del médico si corresponde.</p>
+            </div>
+
+            <div class="flex items-center gap-3 md:col-span-2">
+              <input
+                id="editActivo"
+                v-model="editForm.activo"
+                class="h-5 w-5 rounded border border-slate-700 bg-slate-900 text-emerald-500 focus:ring-emerald-500/60"
+                type="checkbox"
+              />
+              <label class="text-sm text-slate-300" for="editActivo">Usuario activo</label>
+            </div>
+
+            <div class="md:col-span-2 flex items-center gap-3">
+              <button
+                class="inline-flex flex-1 items-center justify-center rounded-xl border border-emerald-400/60 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-emerald-200 transition hover:bg-emerald-500/10 disabled:cursor-not-allowed disabled:opacity-60"
+                :disabled="editLoading"
+                type="button"
+                @click="closeEditModal"
+              >
+                Cancelar
+              </button>
+              <button
+                class="inline-flex flex-1 items-center justify-center rounded-xl bg-emerald-500 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-950 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-emerald-500/60"
+                :disabled="editLoading"
+                type="submit"
+              >
+                <span v-if="!editLoading">Guardar cambios</span>
+                <span v-else>Guardando...</span>
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     </transition>
