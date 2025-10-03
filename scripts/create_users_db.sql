@@ -81,3 +81,15 @@ CREATE TABLE dbo.consultas
     CONSTRAINT FK_consultas_pacientes FOREIGN KEY (id_paciente) REFERENCES dbo.pacientes(id) ON DELETE NO ACTION
 );
 GO
+
+INSERT INTO dbo.usuarios (correo, password, nombre_completo, id_medico, activo, fecha_creacion)
+VALUES
+(
+    'admin@consultorio.com',
+    'MXFQlDjUe8V65YdAjFvMXA==.nlT+YStkL0LCH+Deu08PvWUGZmadvThJr1pD7iCnupY=',
+    'Administrador del sistema',
+    NULL,
+    1,
+    SYSUTCDATETIME()
+);
+GO
