@@ -16,7 +16,7 @@ const errorMessage = ref('');
 const showErrorModal = ref(false);
 
 const apiBase = import.meta.env.VITE_API_BASE ?? 'https://localhost:59831';
-const invalidCredentialsMessage = 'usuario o contraseña no validos';
+const invalidCredentialsMessage = 'usuario o contraseña no válidos';
 
 const handleSubmit = async () => {
   errorMessage.value = '';
@@ -33,15 +33,29 @@ const handleSubmit = async () => {
     });
 
     if (!response.ok) {
-      throw new Error(invalidCredentialsMessage);
+      let apiErrorMessage = invalidCredentialsMessage;
+
+      try {
+        const errorBody = (await response.json()) as Partial<{ message: string; detail: string }>;
+        const possibleMessages = [errorBody?.message, errorBody?.detail].filter(
+          (value): value is string => typeof value === 'string' && value.trim().length > 0
+        );
+        if (possibleMessages.length > 0) {
+          apiErrorMessage = possibleMessages.join(' ');
+        }
+      } catch (parseError) {
+        // Ignoramos errores de parseo para mantener el mensaje por defecto
+      }
+
+      throw new Error(apiErrorMessage);
     }
 
     const data = await response.json();
     authStore.setUser(data);
     router.push({ name: 'dashboard' });
   } catch (error) {
-    if (error instanceof Error) {
-      errorMessage.value = error.message === invalidCredentialsMessage ? invalidCredentialsMessage : 'Ocurrió un error inesperado. Intenta de nuevo.';
+    if (error instanceof Error && error.message.trim().length > 0) {
+      errorMessage.value = error.message;
     } else {
       errorMessage.value = 'Ocurrió un error inesperado. Intenta de nuevo.';
     }
