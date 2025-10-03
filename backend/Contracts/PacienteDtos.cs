@@ -17,3 +17,11 @@ public sealed record PacienteResponse(
     string? Telefono,
     bool Activo,
     DateTime FechaCreacion);
+
+public sealed record UpdatePacienteRequest(
+    string PrimerNombre,
+    string? SegundoNombre,
+    string ApellidoPaterno,
+    string? ApellidoMaterno,
+    string? Telefono,
+    bool Activo);

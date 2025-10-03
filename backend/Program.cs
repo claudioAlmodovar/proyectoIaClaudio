@@ -576,6 +576,43 @@ app.MapDelete("/api/pacientes/{id:int}", async (int id, ConsultorioDbContext db)
     }
 }).WithName("DeletePaciente").RequireAuthorization();
 
+app.MapPut("/api/pacientes/{id:int}", async (int id, UpdatePacienteRequest request, ConsultorioDbContext db) =>
+{
+    try
+    {
+        var paciente = await db.Pacientes.FindAsync(id);
+        if (paciente is null)
+        {
+            return Results.NotFound();
+        }
+
+        paciente.PrimerNombre = request.PrimerNombre.Trim();
+        paciente.SegundoNombre = string.IsNullOrWhiteSpace(request.SegundoNombre) ? null : request.SegundoNombre.Trim();
+        paciente.ApellidoPaterno = request.ApellidoPaterno.Trim();
+        paciente.ApellidoMaterno = string.IsNullOrWhiteSpace(request.ApellidoMaterno) ? null : request.ApellidoMaterno.Trim();
+        paciente.Telefono = string.IsNullOrWhiteSpace(request.Telefono) ? null : request.Telefono.Trim();
+        paciente.Activo = request.Activo;
+
+        await db.SaveChangesAsync();
+
+        var response = new PacienteResponse(
+            paciente.Id,
+            paciente.PrimerNombre,
+            paciente.SegundoNombre,
+            paciente.ApellidoPaterno,
+            paciente.ApellidoMaterno,
+            paciente.Telefono,
+            paciente.Activo,
+            paciente.FechaCreacion);
+
+        return Results.Ok(response);
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem($"Ocurrió un error al actualizar el paciente. {ex.Message}", statusCode: StatusCodes.Status500InternalServerError);
+    }
+}).WithName("UpdatePaciente").RequireAuthorization();
+
 app.MapPost("/api/consultas", async (CreateConsultaRequest request, ConsultorioDbContext db) =>
 {
     try

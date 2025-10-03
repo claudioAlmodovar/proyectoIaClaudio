@@ -41,7 +41,8 @@ const menuSections: MenuSection[] = [
     items: [
       {
         title: 'Crear consulta',
-        detail: 'Registra una nueva consulta, asigna profesionales y prepara el consultorio.'
+        detail: 'Registra una nueva consulta, asigna profesionales y prepara el consultorio.',
+        routeName: 'consulta-create'
       },
       {
         title: 'Historial de consultas',
