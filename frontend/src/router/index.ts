@@ -16,6 +16,14 @@ const router = createRouter({
       meta: {
         requiresAuth: true
       }
+    },
+    {
+      path: '/panel/usuarios/nuevo',
+      name: 'user-create',
+      component: () => import('../views/UserCreateView.vue'),
+      meta: {
+        requiresAuth: true
+      }
     }
   ]
 });

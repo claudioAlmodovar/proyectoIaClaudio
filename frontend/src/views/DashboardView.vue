@@ -3,6 +3,19 @@ import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 
+type MenuItem = {
+  title: string;
+  detail: string;
+  routeName?: string;
+};
+
+type MenuSection = {
+  name: string;
+  icon: string;
+  description: string;
+  items: MenuItem[];
+};
+
 const authStore = useAuthStore();
 const router = useRouter();
 
@@ -14,7 +27,13 @@ const logout = () => {
   router.push({ name: 'login' });
 };
 
-const menuSections = [
+const openMenuItem = (item: MenuItem) => {
+  if (item.routeName) {
+    router.push({ name: item.routeName });
+  }
+};
+
+const menuSections: MenuSection[] = [
   {
     name: 'Consultas',
     icon: '🩺',
@@ -37,7 +56,8 @@ const menuSections = [
     items: [
       {
         title: 'Usuarios',
-        detail: 'Gestiona cuentas, restablece contraseñas y define roles de acceso.'
+        detail: 'Gestiona cuentas, restablece contraseñas y define roles de acceso.',
+        routeName: 'user-create'
       },
       {
         title: 'Médicos',
@@ -94,7 +114,15 @@ const menuSections = [
             <li
               v-for="item in section.items"
               :key="item.title"
-              class="group rounded-2xl border border-slate-800 bg-slate-900/80 p-5 transition hover:border-emerald-500/60 hover:bg-emerald-500/5"
+              :class="[
+                'group rounded-2xl border border-slate-800 bg-slate-900/80 p-5 transition hover:border-emerald-500/60 hover:bg-emerald-500/5',
+                item.routeName ? 'cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60' : ''
+              ]"
+              :role="item.routeName ? 'button' : undefined"
+              :tabindex="item.routeName ? 0 : undefined"
+              @click="openMenuItem(item)"
+              @keydown.enter.prevent="openMenuItem(item)"
+              @keydown.space.prevent="openMenuItem(item)"
             >
               <div class="flex items-center justify-between">
                 <p class="text-base font-semibold text-white">{{ item.title }}</p>
