@@ -353,6 +353,65 @@ app.MapGet("/api/medicos", async (ConsultorioDbContext db) =>
     }
 }).WithName("GetMedicos").RequireAuthorization();
 
+app.MapPut("/api/medicos/{id:int}", async (int id, UpdateMedicoRequest request, ConsultorioDbContext db) =>
+{
+    try
+    {
+        var medico = await db.Medicos.FindAsync(id);
+        if (medico is null)
+        {
+            return Results.NotFound();
+        }
+
+        var cedulaExiste = await db.Medicos.AnyAsync(m => m.Id != id && m.Cedula == request.Cedula);
+        if (cedulaExiste)
+        {
+            return Results.BadRequest(new { message = "La cédula ya se encuentra registrada." });
+        }
+
+        var emailTrimmed = request.Email?.Trim();
+        if (!string.IsNullOrWhiteSpace(emailTrimmed))
+        {
+            var emailExiste = await db.Medicos.AnyAsync(m => m.Id != id && m.Email == emailTrimmed);
+            if (emailExiste)
+            {
+                return Results.BadRequest(new { message = "El correo electrónico del médico ya se encuentra registrado." });
+            }
+        }
+
+        medico.PrimerNombre = request.PrimerNombre.Trim();
+        medico.SegundoNombre = string.IsNullOrWhiteSpace(request.SegundoNombre) ? null : request.SegundoNombre.Trim();
+        medico.ApellidoPaterno = request.ApellidoPaterno.Trim();
+        medico.ApellidoMaterno = string.IsNullOrWhiteSpace(request.ApellidoMaterno) ? null : request.ApellidoMaterno.Trim();
+        medico.Cedula = request.Cedula.Trim();
+        medico.Telefono = string.IsNullOrWhiteSpace(request.Telefono) ? null : request.Telefono.Trim();
+        medico.Especialidad = string.IsNullOrWhiteSpace(request.Especialidad) ? null : request.Especialidad.Trim();
+        medico.Email = string.IsNullOrWhiteSpace(emailTrimmed) ? null : emailTrimmed;
+        medico.Activo = request.Activo;
+
+        await db.SaveChangesAsync();
+
+        var response = new MedicoResponse(
+            medico.Id,
+            medico.PrimerNombre,
+            medico.SegundoNombre,
+            medico.ApellidoPaterno,
+            medico.ApellidoMaterno,
+            medico.Cedula,
+            medico.Telefono,
+            medico.Especialidad,
+            medico.Email,
+            medico.Activo,
+            medico.FechaCreacion);
+
+        return Results.Ok(response);
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem($"Ocurrió un error al actualizar el médico. {ex.Message}", statusCode: StatusCodes.Status500InternalServerError);
+    }
+}).WithName("UpdateMedico").RequireAuthorization();
+
 app.MapDelete("/api/medicos/{id:int}", async (int id, ConsultorioDbContext db) =>
 {
     try
