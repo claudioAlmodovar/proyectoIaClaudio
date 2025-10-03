@@ -51,7 +51,7 @@ app.MapGet("/", () =>
     {
         return Results.Json(new
         {
-            message = "Ocurrió un error al obtener la información de la API.",
+            message = $"Ocurrió un error al obtener la información de la API. {ex.Message}",
             detail = ex.Message
         }, statusCode: StatusCodes.Status500InternalServerError);
     }
@@ -88,7 +88,7 @@ app.MapPost("/auth/login", async (ConsultorioDbContext db, LoginRequest request,
     {
         return Results.Json(new
         {
-            message = "Ocurrió un error al iniciar sesión.",
+            message = $"Ocurrió un error al iniciar sesión. {ex.Message}",
             detail = ex.Message
         }, statusCode: StatusCodes.Status500InternalServerError);
     }
