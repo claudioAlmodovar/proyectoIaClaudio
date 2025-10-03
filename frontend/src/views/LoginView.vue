@@ -82,12 +82,16 @@ const closeErrorModal = () => {
 </script>
 
 <template>
-  <main class="flex min-h-screen items-center justify-center px-4 py-8">
+  <main class="flex min-h-screen flex-col items-center justify-start gap-10 px-4 py-12">
+    <header class="w-full max-w-4xl text-center">
+      <h1 class="text-5xl font-black uppercase tracking-[0.4em] text-emerald-200 drop-shadow-lg sm:text-6xl">Clínica Mágica</h1>
+    </header>
+
     <div class="w-full max-w-4xl overflow-hidden rounded-3xl border border-slate-800 bg-slate-900/70 shadow-2xl shadow-emerald-500/10">
       <div class="grid gap-8 md:grid-cols-2">
         <section class="flex flex-col justify-between gap-6 bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-slate-900 p-8">
           <div>
-            <p class="text-sm uppercase tracking-[0.3em] text-emerald-300">Consultorio Integral</p>
+            <p class="text-sm uppercase tracking-[0.3em] text-emerald-300">Clínica Mágica</p>
             <h1 class="mt-3 text-3xl font-bold text-white md:text-4xl">Acceso al panel clínico</h1>
             <p class="mt-4 text-sm leading-relaxed text-slate-300">
               Administra citas, expedientes y seguimientos desde un único lugar. Ingresa con tu usuario asignado por la administración del consultorio.

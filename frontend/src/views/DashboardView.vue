@@ -54,7 +54,7 @@ const menuSections = [
       <header class="flex flex-col gap-6 rounded-3xl border border-emerald-500/20 bg-slate-950/80 p-8 shadow-2xl shadow-emerald-500/10 backdrop-blur">
         <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <p class="text-sm uppercase tracking-[0.3em] text-emerald-300">Consultorio Integral</p>
+            <p class="text-sm uppercase tracking-[0.3em] text-emerald-300">Clínica Mágica</p>
             <h1 class="text-3xl font-bold text-white md:text-4xl">Menú principal</h1>
             <p class="mt-3 max-w-2xl text-sm text-slate-300">
               Selecciona un módulo para comenzar a trabajar. Desde aquí podrás registrar nuevas consultas, revisar historiales y administrar el equipo del consultorio.
