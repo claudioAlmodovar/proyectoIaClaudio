@@ -82,7 +82,15 @@ const closeErrorModal = () => {
 </script>
 
 <template>
-  <main class="flex min-h-screen flex-col items-center justify-start gap-10 px-4 py-12">
+  <main class="relative flex min-h-screen flex-col items-center justify-start gap-10 overflow-hidden px-4 py-12">
+    <div aria-hidden="true" class="pointer-events-none absolute inset-0 -z-10">
+      <img
+        alt=""
+        class="h-full w-full object-cover opacity-40"
+        src="https://images.unsplash.com/photo-1580281657521-6fe5c8b1600c?auto=format&fit=crop&w=2000&q=80"
+      />
+      <div class="absolute inset-0 bg-slate-950/80"></div>
+    </div>
     <header class="w-full max-w-4xl text-center">
       <h1 class="text-5xl font-black uppercase tracking-[0.4em] text-emerald-200 drop-shadow-lg sm:text-6xl">Clínica Mágica</h1>
     </header>
