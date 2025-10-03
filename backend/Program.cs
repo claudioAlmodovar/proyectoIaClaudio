@@ -59,7 +59,7 @@ app.MapPost("/auth/login", (ConsultorioDbContext db, LoginRequest request) =>
         return Results.Unauthorized(new { message = "El usuario se encuentra inactivo." });
     }
 
-    var response = new LoginResponse(usuario.IdUsuarios, usuario.Usuario, usuario.Nombre);
+    var response = new LoginResponse(usuario.IdUsuarios, usuario.NombreUsuario, usuario.Nombre);
     return Results.Ok(response);
 })
    .WithName("Login")

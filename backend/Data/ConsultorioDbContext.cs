@@ -10,7 +10,7 @@ public sealed class ConsultorioDbContext
     {
         _usuarios = SeedUsuarios()
             .ToDictionary(
-                usuario => usuario.Usuario.Trim().ToLowerInvariant(),
+                usuario => usuario.NombreUsuario.Trim().ToLowerInvariant(),
                 usuario => usuario,
                 StringComparer.Ordinal);
     }
@@ -31,7 +31,7 @@ public sealed class ConsultorioDbContext
         yield return new Usuario
         {
             IdUsuarios = 1,
-            Usuario = "recepcion",
+            NombreUsuario = "recepcion",
             Nombre = "Laura Sánchez",
             Contrasena = "recepcion123",
             Activo = true
@@ -40,7 +40,7 @@ public sealed class ConsultorioDbContext
         yield return new Usuario
         {
             IdUsuarios = 2,
-            Usuario = "doctor1",
+            NombreUsuario = "doctor1",
             Nombre = "Dr. Jorge Medina",
             Contrasena = "consulta2024",
             Activo = true
@@ -49,7 +49,7 @@ public sealed class ConsultorioDbContext
         yield return new Usuario
         {
             IdUsuarios = 3,
-            Usuario = "admin",
+            NombreUsuario = "admin",
             Nombre = "Administración",
             Contrasena = "admin2024",
             Activo = false
